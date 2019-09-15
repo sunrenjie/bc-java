@@ -1,8 +1,11 @@
 package org.bouncycastle.tls;
 
+import java.security.SecureRandom;
 import java.util.Vector;
 
 import org.bouncycastle.tls.crypto.TlsSecret;
+import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto;
+import org.bouncycastle.tls.crypto.impl.bc.BcTlsSecret;
 
 /**
  * Carrier class for general security parameters.
@@ -44,6 +47,29 @@ public class SecurityParameters
     // TODO[tls-ops] Investigate whether we can handle verify data using TlsSecret
     byte[] localVerifyData = null;
     byte[] peerVerifyData = null;
+
+
+    /**
+     * Copies the security parameters from another instance if it is not null,
+     * otherwise this is a no-op.
+     *
+     * @param other
+     */
+    void copySecurityParametersFrom(org.bouncycastle.tls.SecurityParameters other)
+    {
+        if (other != null) {
+            this.entity = other.entity;
+            this.cipherSuite = other.cipherSuite;
+            this.prfAlgorithm = other.prfAlgorithm;
+            this.verifyDataLength = other.verifyDataLength;
+            if (other.masterSecret instanceof BcTlsSecret) { // work around copying of the non-sharable master-secret
+                BcTlsSecret s = (BcTlsSecret) other.masterSecret;
+                this.masterSecret = new BcTlsSecret(new BcTlsCrypto(new SecureRandom()), s.copyData());
+            } else {
+                this.masterSecret = other.masterSecret;
+            }
+        }
+    }
 
     void clear()
     {

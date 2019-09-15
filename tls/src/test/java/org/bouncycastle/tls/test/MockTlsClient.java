@@ -7,22 +7,7 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.tls.AlertDescription;
-import org.bouncycastle.tls.AlertLevel;
-import org.bouncycastle.tls.CertificateRequest;
-import org.bouncycastle.tls.ChannelBinding;
-import org.bouncycastle.tls.ClientCertificateType;
-import org.bouncycastle.tls.DefaultTlsClient;
-import org.bouncycastle.tls.MaxFragmentLength;
-import org.bouncycastle.tls.ProtocolName;
-import org.bouncycastle.tls.ProtocolVersion;
-import org.bouncycastle.tls.SignatureAlgorithm;
-import org.bouncycastle.tls.TlsAuthentication;
-import org.bouncycastle.tls.TlsCredentials;
-import org.bouncycastle.tls.TlsExtensionsUtils;
-import org.bouncycastle.tls.TlsFatalAlert;
-import org.bouncycastle.tls.TlsServerCertificate;
-import org.bouncycastle.tls.TlsSession;
+import org.bouncycastle.tls.*;
 import org.bouncycastle.tls.crypto.TlsCertificate;
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto;
 import org.bouncycastle.util.Arrays;
@@ -32,12 +17,21 @@ class MockTlsClient
     extends DefaultTlsClient
 {
     TlsSession session;
+    NewSessionTicket sessionTicket;
+    SecurityParameters securityParameters;
 
     MockTlsClient(TlsSession session)
     {
         super(new BcTlsCrypto(new SecureRandom()));
 
         this.session = session;
+    }
+
+    MockTlsClient(NewSessionTicket sessionTicket, SecurityParameters securityParameters)
+    {
+        super(new BcTlsCrypto(new SecureRandom()));
+        this.sessionTicket = sessionTicket;
+        this.securityParameters = securityParameters;
     }
 
     protected Vector getProtocolNames()
@@ -85,6 +79,7 @@ class MockTlsClient
             TlsExtensionsUtils.addMaxFragmentLengthExtension(clientExtensions, MaxFragmentLength.pow2_9);
             TlsExtensionsUtils.addPaddingExtension(clientExtensions, context.getCrypto().getSecureRandom().nextInt(16));
             TlsExtensionsUtils.addTruncatedHMacExtension(clientExtensions);
+            TlsExtensionsUtils.addSessionTicketExtension(clientExtensions);
         }
         return clientExtensions;
     }
@@ -117,11 +112,12 @@ class MockTlsClient
 
                 boolean isEmpty = serverCertificate == null || serverCertificate.getCertificate() == null
                     || serverCertificate.getCertificate().isEmpty();
-                if (isEmpty || !TlsTestUtils.isCertificateOneOf(context.getCrypto(), chain[0],
+                if (isEmpty /* TODO shall accept external valid certificates */
+                    /*|| !TlsTestUtils.isCertificateOneOf(context.getCrypto(), chain[0],
                     new String[]
                     { "x509-server-dsa.pem", "x509-server-ecdh.pem", "x509-server-ecdsa.pem", "x509-server-ed25519.pem",
                         "x509-server-rsa_pss_256.pem", "x509-server-rsa_pss_384.pem", "x509-server-rsa_pss_512.pem",
-                        "x509-server-rsa-enc.pem", "x509-server-rsa-sign.pem" }))
+                        "x509-server-rsa-enc.pem", "x509-server-rsa-sign.pem" }) */)
                 {
                     throw new TlsFatalAlert(AlertDescription.bad_certificate);
                 }
@@ -180,5 +176,23 @@ class MockTlsClient
     protected String hex(byte[] data)
     {
         return data == null ? "(null)" : Hex.toHexString(data);
+    }
+
+    public void notifyNewSessionTicket(NewSessionTicket newSessionTicket, SecurityParameters securityParameters)
+            throws IOException
+    {
+        super.notifyNewSessionTicket(newSessionTicket, securityParameters);
+        this.sessionTicket = newSessionTicket;
+        this.securityParameters = securityParameters;
+    }
+
+    public NewSessionTicket getNewSessionTicket()
+    {
+        return sessionTicket;
+    }
+
+    public SecurityParameters getSecurityParameters()
+    {
+        return this.securityParameters;
     }
 }

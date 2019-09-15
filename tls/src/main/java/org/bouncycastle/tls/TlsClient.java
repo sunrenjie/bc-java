@@ -85,8 +85,25 @@ public interface TlsClient
      * that it complies with e.g. <i>RFC 5077 4. Recommended Ticket Construction</i>.
      *
      * @param newSessionTicket The ticket.
+     * @param securityParameters security parameters
      * @throws IOException
      */
-    void notifyNewSessionTicket(NewSessionTicket newSessionTicket)
+    void notifyNewSessionTicket(NewSessionTicket newSessionTicket, SecurityParameters securityParameters)
         throws IOException;
+
+    /**
+     * 
+     * @return a {@link NewSessionTicket}
+     */
+    NewSessionTicket getNewSessionTicket();
+
+    /**
+     * In the case of TLS resumption using session tickets, {@link TlsClient#getSessionToResume()}
+     * may return a null TlsSession. Use this method to retrieve the security parameters needed for
+     * session resumption.
+     * 
+     * @return A {@link SecurityParameters} object
+     * @throws IOException
+     */
+    SecurityParameters getSecurityParameters();
 }

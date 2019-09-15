@@ -345,8 +345,18 @@ public abstract class AbstractTlsClient
         return null;
     }
 
-    public void notifyNewSessionTicket(NewSessionTicket newSessionTicket)
+    public void notifyNewSessionTicket(NewSessionTicket newSessionTicket, SecurityParameters securityParameters)
         throws IOException
     {
+    }
+
+    public NewSessionTicket getNewSessionTicket()
+    {
+        return null;
+    }
+
+    public SecurityParameters getSecurityParameters()
+    {
+        return null;
     }
 }

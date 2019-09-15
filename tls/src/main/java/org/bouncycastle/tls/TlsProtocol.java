@@ -80,7 +80,7 @@ public abstract class TlsProtocol
     protected Hashtable serverExtensions = null;
 
     protected short connection_state = CS_START;
-    protected boolean resumedSession = false;
+    protected boolean resumedSession = false; // TODO distinguish between session ID vs. session ticket.
     protected boolean receivedChangeCipherSpec = false;
     protected boolean allowCertificateStatus = false;
     protected boolean expectSessionTicket = false;
@@ -411,7 +411,7 @@ public abstract class TlsProtocol
                     .setServerExtensions(this.serverExtensions)
                     .build();
 
-                this.tlsSession = TlsUtils.importSession(this.tlsSession.getSessionID(), this.sessionParameters);
+                this.tlsSession = TlsUtils.importSession(this.tlsSession == null ? new byte[0] : this.tlsSession.getSessionID(), this.sessionParameters);
             }
 
             getContextAdmin().handshakeComplete(getPeer(), this.tlsSession);

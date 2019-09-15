@@ -23,8 +23,8 @@ public class TlsClientTest
     public static void main(String[] args)
         throws Exception
     {
-        InetAddress address = InetAddress.getLocalHost();
-        int port = 5556;
+        InetAddress address = InetAddress.getByName("www.feistyduck.com");
+        int port = 443;
 
         long time1 = System.currentTimeMillis();
 
@@ -35,6 +35,7 @@ public class TlsClientTest
         long time2 = System.currentTimeMillis();
         System.out.println("Elapsed 1: " + (time2 - time1) + "ms");
 
+        // session resumption using session id
         client = new MockTlsClient(client.getSessionToResume());
         protocol = openTlsConnection(address, port, client);
 
@@ -42,18 +43,26 @@ public class TlsClientTest
         System.out.println("Elapsed 2: " + (time3 - time2) + "ms");
 
         OutputStream output = protocol.getOutputStream();
-        output.write("GET / HTTP/1.1\r\n\r\n".getBytes("UTF-8"));
+        output.write("GET /includes/ HTTP/1.1\r\n\r\n".getBytes("UTF-8"));
         output.flush();
 
         InputStream input = protocol.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
         String line;
-        while ((line = reader.readLine()) != null)
-        {
-            System.out.println(">>> " + line);
+        try {
+            while ((line = reader.readLine()) != null)
+            {
+                System.out.println(">>> " + line);
+            }
+        } catch (Exception e) {
+            System.err.println(e);
         }
 
+        protocol.close();
+        // session resumption using session tickets
+        client = new MockTlsClient(client.getNewSessionTicket(), client.getSecurityParameters());
+        protocol = openTlsConnection(address, port, client);
         protocol.close();
     }
 

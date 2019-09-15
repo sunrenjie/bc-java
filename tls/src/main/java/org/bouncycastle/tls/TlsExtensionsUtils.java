@@ -43,6 +43,7 @@ public class TlsExtensionsUtils
     public static final Integer EXT_supported_versions = Integers.valueOf(ExtensionType.supported_versions);
     public static final Integer EXT_truncated_hmac = Integers.valueOf(ExtensionType.truncated_hmac);
     public static final Integer EXT_trusted_ca_keys = Integers.valueOf(ExtensionType.trusted_ca_keys);
+    public static final Integer EXT_session_tickets = Integer.valueOf(ExtensionType.session_ticket);
 
     public static Hashtable ensureExtensionsInitialised(Hashtable extensions)
     {
@@ -60,6 +61,11 @@ public class TlsExtensionsUtils
     public static void addALPNExtensionServer(Hashtable extensions, ProtocolName protocolName) throws IOException
     {
         extensions.put(EXT_application_layer_protocol_negotiation, createALPNExtensionServer(protocolName));
+    }
+
+    public static void addSessionTicketExtension(Hashtable extensions)
+    {
+        extensions.put(EXT_session_tickets, createEmptyExtensionData());
     }
 
     public static void addCertificateAuthoritiesExtension(Hashtable extensions, Vector authorities) throws IOException
