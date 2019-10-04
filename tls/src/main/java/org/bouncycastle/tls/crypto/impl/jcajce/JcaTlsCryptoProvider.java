@@ -64,13 +64,18 @@ public class JcaTlsCryptoProvider
         {
             if (random == null)
             {
+                // TODO work on potential compatibility issue with the best default SecureRandom.
+                // For Java 6, the safest choice is "SHA1PRNG". For Java 8/11, "NativePRNG" is the default.
+                // In addition, there is no "DEFAULT" SecureRandom implementation available for Java 8/11.
+                // Maybe multi rounds of trial-and-error shall be performed.
+                // See also https://www.synopsys.com/blogs/software-security/proper-use-of-javas-securerandom/
                 if (helper instanceof DefaultJcaJceHelper)
                 {
-                    random = SecureRandom.getInstance("DEFAULT");
+                    random = SecureRandom.getInstance("NativePRNG");
                 }
                 else
                 {
-                    random = SecureRandom.getInstance("DEFAULT", helper.createDigest("SHA-512").getProvider());
+                    random = SecureRandom.getInstance("NativePRNG", helper.createDigest("SHA-512").getProvider());
                 }
             }
 

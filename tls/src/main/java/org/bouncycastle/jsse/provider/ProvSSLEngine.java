@@ -6,6 +6,7 @@ import java.security.Principal;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,6 +24,8 @@ import org.bouncycastle.jsse.BCSSLConnection;
 import org.bouncycastle.jsse.BCSSLEngine;
 import org.bouncycastle.jsse.BCSSLParameters;
 import org.bouncycastle.tls.AlertDescription;
+import org.bouncycastle.tls.NewSessionTicket;
+import org.bouncycastle.tls.SecurityParameters;
 import org.bouncycastle.tls.RecordFormat;
 import org.bouncycastle.tls.RecordPreview;
 import org.bouncycastle.tls.TlsClientProtocol;
@@ -41,6 +44,8 @@ class ProvSSLEngine
     implements BCSSLEngine, ProvTlsManager
 {
     private static final Logger LOG = Logger.getLogger(ProvSSLEngine.class.getName());
+    private static final ConcurrentHashMap<String, NewSessionTicket> sessionTicketMap = new ConcurrentHashMap<String, NewSessionTicket>();
+    private static final ConcurrentHashMap<String, SecurityParameters> secParamMap = new ConcurrentHashMap<String, SecurityParameters>();
 
     protected final ProvSSLContextSpi context;
     protected final ContextData contextData;
@@ -110,6 +115,14 @@ class ProvSSLEngine
                 this.protocol = clientProtocol;
 
                 ProvTlsClient client = new ProvTlsClient(this, sslParameters.copy());
+                // RFC 5077: re-use existing session ticket from hash map if available.
+                String key = getPeerHost() + ":" + getPeerPort();
+                NewSessionTicket ticket = sessionTicketMap.get(key);
+                SecurityParameters sp = secParamMap.get(key);
+                if (ticket != null && sp != null) {
+                    client.setNewSessionTicket(ticket);
+                    client.setSecurityParameters(sp.makeCopy()); // clone for the non-sharable master secret.
+                }
                 this.protocolPeer = client;
 
                 clientProtocol.connect(client);
@@ -685,13 +698,28 @@ class ProvSSLEngine
 
     public synchronized void notifyHandshakeComplete(ProvSSLConnection connection)
     {
-        if (null != handshakeSession && !handshakeSession.isValid())
-        {
+        boolean succeeded = null != handshakeSession && !handshakeSession.isValid();
+        String key = getPeerHost() + ":" + getPeerPort();
+        if (!succeeded) {
             connection.getSession().invalidate();
+            sessionTicketMap.remove(key);
+            secParamMap.remove(key);
         }
 
         this.handshakeSession = null;
         this.connection = connection;
+
+        // RFC 5077: keep away new session ticket if available.
+        // The design here is to extract NewSessionTicket from protocol, store at hash map, assign to newly created
+        // protocolPeer if host+port pair match.
+        if (protocol instanceof TlsClientProtocol && succeeded) {
+            TlsClientProtocol p = (TlsClientProtocol) protocol;
+            NewSessionTicket ticket = p.getNewSessionTicket();
+            if (ticket != null) { // received session ticket from the first successful full handshake
+                sessionTicketMap.put(key, ticket);
+                secParamMap.put(key, p.getSecurityParameters());
+            }
+        }
     }
 
     public synchronized void notifyHandshakeSession(ProvSSLSessionHandshake handshakeSession)

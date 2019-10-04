@@ -3,9 +3,12 @@ package org.bouncycastle.tls;
 import java.security.SecureRandom;
 import java.util.Vector;
 
+import org.bouncycastle.tls.crypto.TlsCrypto;
 import org.bouncycastle.tls.crypto.TlsSecret;
+import org.bouncycastle.tls.crypto.impl.AbstractTlsSecret;
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto;
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsSecret;
+import org.bouncycastle.tls.crypto.impl.jcajce.JceTlsSecret;
 
 /**
  * Carrier class for general security parameters.
@@ -48,27 +51,33 @@ public class SecurityParameters
     byte[] localVerifyData = null;
     byte[] peerVerifyData = null;
 
+    TlsCrypto crypto;
 
-    /**
-     * Copies the security parameters from another instance if it is not null,
-     * otherwise this is a no-op.
-     *
-     * @param other
-     */
-    void copySecurityParametersFrom(org.bouncycastle.tls.SecurityParameters other)
-    {
+    public static SecurityParameters createFrom(TlsClientContextImpl tlsClientContext) {
+        SecurityParameters sp = new SecurityParameters();
+        SecurityParameters other = tlsClientContext.getSecurityParameters();
         if (other != null) {
-            this.entity = other.entity;
-            this.cipherSuite = other.cipherSuite;
-            this.prfAlgorithm = other.prfAlgorithm;
-            this.verifyDataLength = other.verifyDataLength;
-            if (other.masterSecret instanceof BcTlsSecret) { // work around copying of the non-sharable master-secret
-                BcTlsSecret s = (BcTlsSecret) other.masterSecret;
-                this.masterSecret = new BcTlsSecret(new BcTlsCrypto(new SecureRandom()), s.copyData());
-            } else {
-                this.masterSecret = other.masterSecret;
-            }
+            sp.entity = other.entity;
+            sp.cipherSuite = other.cipherSuite;
+            sp.prfAlgorithm = other.prfAlgorithm;
+            sp.verifyDataLength = other.verifyDataLength;
+            sp.crypto = tlsClientContext.getCrypto();
+            sp.masterSecret = sp.crypto.adoptSecret(other.masterSecret);
         }
+        return sp;
+    }
+
+    public SecurityParameters makeCopy() {
+        SecurityParameters sp = new SecurityParameters();
+        sp.entity = this.entity;
+        sp.cipherSuite = this.cipherSuite;
+        sp.prfAlgorithm = this.prfAlgorithm;
+        sp.verifyDataLength = this.verifyDataLength;
+        sp.crypto = this.crypto;
+        if (this.crypto != null) {
+            sp.masterSecret = crypto.adoptSecret(this.masterSecret);
+        }
+        return sp;
     }
 
     void clear()

@@ -262,6 +262,9 @@ public abstract class AbstractTlsClient
             }
         }
 
+        // RFC 5077 session ticket
+        TlsExtensionsUtils.addSessionTicketExtension(clientExtensions);
+
         return clientExtensions;
     }
 

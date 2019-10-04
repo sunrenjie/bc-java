@@ -25,6 +25,9 @@ public class TlsClientProtocol
     protected CertificateStatus certificateStatus = null;
     protected CertificateRequest certificateRequest = null;
 
+    private SecurityParameters securityParameters;
+    private NewSessionTicket sessionTicket;
+
     /**
      * Constructor for non-blocking mode.<br>
      * <br>
@@ -595,7 +598,7 @@ public class TlsClientProtocol
     protected void receiveNewSessionTicketMessage(ByteArrayInputStream buf)
         throws IOException
     {
-        NewSessionTicket newSessionTicket = NewSessionTicket.parse(buf);
+        sessionTicket = NewSessionTicket.parse(buf);
 
         assertEmpty(buf);
 
@@ -603,9 +606,8 @@ public class TlsClientProtocol
          * RFC 5077 - notify client so it can save the ticket and security
          * parameters for session resumption.
          */
-        SecurityParameters securityParameters = new SecurityParameters();
-        securityParameters.copySecurityParametersFrom(tlsClientContext.getSecurityParameters());
-        tlsClient.notifyNewSessionTicket(newSessionTicket, securityParameters);
+        securityParameters = SecurityParameters.createFrom(tlsClientContext);
+        tlsClient.notifyNewSessionTicket(sessionTicket, securityParameters);
     }
 
     protected void receiveServerHelloMessage(ByteArrayInputStream buf)
@@ -1150,5 +1152,15 @@ public class TlsClientProtocol
     private boolean canResumeUsingNewSessionTicket()
     {
         return this.tlsClient.getNewSessionTicket() != null;
+    }
+
+    public NewSessionTicket getNewSessionTicket()
+    {
+        return sessionTicket;
+    }
+
+    public SecurityParameters getSecurityParameters()
+    {
+        return securityParameters;
     }
 }

@@ -126,7 +126,7 @@ public abstract class AbstractTlsSecret
         return adoptLocalSecret(prk);
     }
 
-    public synchronized byte[] copyData()
+    synchronized byte[] copyData()
     {
         return Arrays.clone(data);
     }

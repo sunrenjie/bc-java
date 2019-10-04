@@ -23,7 +23,7 @@ public class TlsClientTest
     public static void main(String[] args)
         throws Exception
     {
-        InetAddress address = InetAddress.getByName("www.feistyduck.com");
+        InetAddress address = InetAddress.getByName("104.130.13.11");
         int port = 443;
 
         long time1 = System.currentTimeMillis();
@@ -50,20 +50,11 @@ public class TlsClientTest
         BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
         String line;
-        try {
-            while ((line = reader.readLine()) != null)
-            {
-                System.out.println(">>> " + line);
-            }
-        } catch (Exception e) {
-            System.err.println(e);
-        }
+
 
         protocol.close();
         // session resumption using session tickets
-        client = new MockTlsClient(client.getNewSessionTicket(), client.getSecurityParameters());
-        protocol = openTlsConnection(address, port, client);
-        protocol.close();
+
     }
 
     static TlsClientProtocol openTlsConnection(InetAddress address, int port, TlsClient client) throws IOException

@@ -602,9 +602,7 @@ public class DTLSClientProtocol
          * RFC 5077 - notify client so it can save the ticket and security
          * parameters for session resumption.
          */
-        SecurityParameters securityParameters = new SecurityParameters();
-        securityParameters.copySecurityParametersFrom(state.clientContext.getSecurityParameters());
-
+        SecurityParameters securityParameters = SecurityParameters.createFrom(state.clientContext);
         state.client.notifyNewSessionTicket(newSessionTicket, securityParameters);
     }
 

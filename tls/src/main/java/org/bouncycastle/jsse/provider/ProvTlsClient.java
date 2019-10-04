@@ -23,6 +23,7 @@ import org.bouncycastle.tls.Certificate;
 import org.bouncycastle.tls.CertificateRequest;
 import org.bouncycastle.tls.CertificateStatusRequest;
 import org.bouncycastle.tls.DefaultTlsClient;
+import org.bouncycastle.tls.NewSessionTicket;
 import org.bouncycastle.tls.KeyExchangeAlgorithm;
 import org.bouncycastle.tls.ProtocolVersion;
 import org.bouncycastle.tls.SecurityParameters;
@@ -56,6 +57,9 @@ class ProvTlsClient
 
     protected ProvSSLSession sslSession = null;
     protected boolean handshakeComplete = false;
+
+    NewSessionTicket sessionTicket;
+    SecurityParameters securityParameters;
 
     ProvTlsClient(ProvTlsManager manager, ProvSSLParameters sslParameters)
     {
@@ -460,5 +464,26 @@ class ProvTlsClient
         }
 
         return true;
+    }
+
+    public void notifyNewSessionTicket(NewSessionTicket newSessionTicket, SecurityParameters securityParameters)
+            throws IOException {
+        // don't store session ticket into this
+    }
+
+    void setNewSessionTicket(NewSessionTicket sessionTicket) {
+        this.sessionTicket = sessionTicket;
+    }
+
+    public NewSessionTicket getNewSessionTicket() {
+        return sessionTicket;
+    }
+
+    void setSecurityParameters(SecurityParameters securityParameters) {
+        this.securityParameters = securityParameters;
+    }
+
+    public SecurityParameters getSecurityParameters() {
+        return securityParameters;
     }
 }
