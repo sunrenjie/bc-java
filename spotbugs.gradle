@@ -1,9 +1,4 @@
 buildscript {
-  repositories {
-    maven {
-      url "https://plugins.gradle.org/m2/"
-    }
-  }
 
   dependencies {
     classpath "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.2"
@@ -19,14 +14,6 @@ allprojects {
   apply plugin: 'java'
   apply plugin: "com.github.spotbugs"
   apply plugin: 'net.saliman.cobertura'
-
-  repositories {
-    mavenCentral()
-  }
-
-  dependencies {
-
-  }
 
   compileJava {
     options.debug = true

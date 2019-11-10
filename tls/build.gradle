@@ -14,6 +14,13 @@ sourceSets {
     }
 }
 
+// See https://stackoverflow.com/questions/11474729/how-to-build-sources-jar-with-gradle
+task jarSources(type:Jar){
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+jarSources.baseName = "bctls-jdk15on"
 
 cobertura {
    coverageDirs = [
