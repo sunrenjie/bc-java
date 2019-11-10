@@ -509,6 +509,18 @@ class ProvSSLEngine
 
                 handshakeStatus = HandshakeStatus.NEED_WRAP;
 
+                // RFC5077: drop cache upon certain TLS exception.
+                if (e instanceof TlsFatalAlert) {
+                    TlsFatalAlert alert = (TlsFatalAlert) e;
+                    if (alert.getAlertDescription() == AlertDescription.unexpected_message) {
+                        // Something is wrong; highly likely that the session ticket is invalid now.
+                        // For safety, drop the session ticket & security parameters cache.
+                        String key = getPeerHost() + ":" + getPeerPort();
+                        sessionTicketMap.remove(key);
+                        secParamMap.remove(key);
+                    }
+                }
+
                 return new SSLEngineResult(Status.OK, HandshakeStatus.NEED_WRAP, bytesConsumed, bytesProduced);
             }
         }
