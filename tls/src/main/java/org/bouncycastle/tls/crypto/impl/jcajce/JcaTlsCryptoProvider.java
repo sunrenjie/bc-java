@@ -20,6 +20,25 @@ import org.bouncycastle.tls.crypto.TlsCryptoProvider;
 public class JcaTlsCryptoProvider
     implements TlsCryptoProvider
 {
+    private static final String defaultPRNGAlgorithm = selectPRNGAlgorithm();
+
+    // For Java 6, the safest choice is "SHA1PRNG". For Java 8/11, "NativePRNG" is the default.
+    // For Windows, "Windows-PRNG" seems more appropriate; but "SHA1PRNG" works on Windows as well.
+    // In addition, there is no "DEFAULT" (in upstream bc-java code) available for Java 8/11.
+    // See also https://www.synopsys.com/blogs/software-security/proper-use-of-javas-securerandom/
+    private static String selectPRNGAlgorithm() {
+        String[] cs = new String[] {"NativePRNG", "SHA1PRNG", "Windows-PRNG"};
+        for (String s: cs) {
+            try {
+                SecureRandom.getInstance(s);
+                return s;
+            } catch (Exception ex) {
+                ; // silent ignored.
+            }
+        }
+        return "DEFAULT"; // the upstream bc-java code; kept in respect.
+    }
+
     private JcaJceHelper helper = new DefaultJcaJceHelper();
 
     public JcaTlsCryptoProvider()
@@ -64,18 +83,14 @@ public class JcaTlsCryptoProvider
         {
             if (random == null)
             {
-                // TODO work on potential compatibility issue with the best default SecureRandom.
-                // For Java 6, the safest choice is "SHA1PRNG". For Java 8/11, "NativePRNG" is the default.
-                // In addition, there is no "DEFAULT" SecureRandom implementation available for Java 8/11.
-                // Maybe multi rounds of trial-and-error shall be performed.
-                // See also https://www.synopsys.com/blogs/software-security/proper-use-of-javas-securerandom/
                 if (helper instanceof DefaultJcaJceHelper)
                 {
-                    random = SecureRandom.getInstance("NativePRNG");
+                    random = SecureRandom.getInstance(defaultPRNGAlgorithm);
                 }
                 else
                 {
-                    random = SecureRandom.getInstance("NativePRNG", helper.createDigest("SHA-512").getProvider());
+                    random = SecureRandom.getInstance(defaultPRNGAlgorithm,
+                            helper.createDigest("SHA-512").getProvider());
                 }
             }
 
